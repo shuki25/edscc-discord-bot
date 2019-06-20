@@ -1,8 +1,10 @@
 from configparser import ConfigParser
+from terminaltables import AsciiTable
 import discord
 import logging
 import os
 import edscc
+
 
 client = discord.Client()
 debug = False
@@ -47,22 +49,19 @@ if debug:
     handler2.setFormatter(logging.Formatter('%(asctime)s:%(levelname)s:%(name)s: %(message)s'))
     logger2.addHandler(handler2)
 
-    # try:
-    edscc_client = edscc.ApiClient(api_key=api_key, api_url=api_url)
-    edscc_client.auth()
-    valid_verb = edscc_client.valid_verb
-    print(valid_verb)
-
-
-# except:
-#     print("Connection to EDSCC Server failed.")
-#     exit(-1)
+    try:
+        edscc_client = edscc.ApiClient(api_key=api_key, api_url=api_url)
+        edscc_client.auth()
+        valid_verb = edscc_client.valid_verb
+        print(valid_verb)
+    except Exception:
+        print("Connection to EDSCC Server failed.")
+        exit(-1)
 
 @client.event
 async def on_ready():
-    print(f'We have logged in as {client.user}')
     print(f'Discord package version: {discord.__version__}')
-
+    print(f'We have logged in as {client.user}')
 
 @client.event
 async def on_message(message):  # event that happens per any message.
@@ -85,7 +84,7 @@ async def on_message(message):  # event that happens per any message.
         if command in valid_verb:
             reply = {
                 'message': '',
-                'status_code': '200',
+                'app_code': '200',
                 'error': ''
             }
             if command == 'link':
@@ -95,15 +94,21 @@ async def on_message(message):  # event that happens per any message.
                     print("Exception!")
             else:
                 try:
-                    reply = edscc_client.post(command, discord_name=message.author, discord_id=message.author.id)
+                    reply = edscc_client.post(command, discord_name=message.author, discord_id=message.author.id,
+                                              params=params)
                 except Exception:
                     print(f"Command '{command}' failed.")
+                    msg = 'Command {0} failed. Internal Error.'.format(command)
+                    await message.channel.send(msg)
 
-            if reply['status_code'] == 200:
-                if reply['message'] != '':
-                    msg = '{0.author.mention} {1}'.format(message, reply['message'])
-                else:
-                    msg = '{0.author.mention} {1}'.format(message, reply['error'])
+            if reply['app_code'] == 200:
+                msg = '{0.author.mention} {1}'.format(message, reply['message'])
+                if 'table' in reply:
+                    table = AsciiTable(reply['table']['data'])
+                    msg = msg + '```' + reply['table']['title'] + '\n' + table.table + '```'
+                await message.channel.send(msg)
+            else:
+                msg = '{0.author.mention} {1}'.format(message, reply['error'])
                 await message.channel.send(msg)
         else:
             msg = '{0.author.mention} Unknown command. `!commands` for a list of valid commands.'.format(message)
