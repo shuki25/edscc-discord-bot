@@ -24,6 +24,15 @@ class ApiClient:
         print('Connecting EDSCC API Server')
         print(f"Command: {verb} Options: {options}")
         uri = '{0}/api/{1}'.format(self.url, verb) if verb != "auth" else '{0}/{1}'.format(self.url, verb)
+
+        if 'params' in options:
+            params = []
+            for key in options:
+                if key == 'params':
+                    params.append(options[key])
+            options.pop('params')
+            options.update({'params[]': params})
+
         options.update({'fromSoftware': 'EDSCC Discord Bot'})
 
         header = {
