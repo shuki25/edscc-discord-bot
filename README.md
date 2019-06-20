@@ -10,7 +10,7 @@
 
 ### Requirements
 * Python 3.5.3 or higher
-* Libraries installed: `discord`, `requests`
+* Libraries installed: `discord`, `requests`, `terminaltables`
 
 ### Commands
 
